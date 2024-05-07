@@ -1,49 +1,96 @@
-import OSLog
+import Foundation
+import Dispatch
 
-public extension Logger {
-    /// Using your bundle identifier is a great way to ensure a unique identifier.
-    static var subsystem = Bundle.main.bundleIdentifier ?? ""
 
-    /// Logs the view cycles like a view that appeared.
-    static let `default` = Logger(subsystem: subsystem, category: "default")
-
-    /// All logs related to tracking and analytics.
-    static let statistics = Logger(subsystem: subsystem, category: "statistics")
+public class Log: LogHandler {
+    
+    public static let shared = Log()
+    private init() {}
+    private var queue = DispatchQueue(label: "nu.clox.Log")
+    
+    // MARK: - Handler Management
+    
+    private var handlers: [LogHandler] = [OSLogHandler()]
+    
+    public func configureHandlers(_ handlers: [LogHandler]) {
+        queue.sync {
+            self.handlers = handlers
+        }
+    }
+    
+    public func removeAllHandlers() {
+        queue.sync {
+            handlers.removeAll()
+        }
+    }
+    
+    public func appendHandler(_ handler: LogHandler) {
+        queue.sync {
+            handlers.append(handler)
+        }
+    }
+    
+    // MARK: - Handle
+    
+    public func log(
+        _ message: String,
+        level: LogLevel,
+        file: String = #fileID,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        queue.sync {
+            for handler in handlers {
+                handler.log(message, level: level, file: file, function: function, line: line)
+            }
+        }
+    }
+    
+    public func logElapsedTime<T>(
+        _ message: String,
+        level: LogLevel,
+        work: () throws -> T,
+        file: String = #fileID,
+        function: String = #function,
+        line: Int = #line
+    ) rethrows -> T {
+        var result: T!
+        let elapsedTime = try ContinuousClock().measure {
+            result = try work()
+        }
+        log("\(message) \(elapsedTime)", level: level, file: file, function: function, line: line)
+        return result
+    }
 }
 
 public func logD(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
-    Logger.default.debug("[\(file)] \(function):\(line) \(message, privacy: .public)")
+    Log.shared.log(message, level: .debug, file: file, function: function, line: line)
 }
 
 public func logE(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
-    Logger.default.error("[\(file)] \(function):\(line) \(message, privacy: .public)")
+    Log.shared.log(message, level: .error, file: file, function: function, line: line)
 }
 
 public func logW(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
-    Logger.default.warning("[\(file)] \(function):\(line) \(message, privacy: .public)")
+    Log.shared.log(message, level: .warning, file: file, function: function, line: line)
 }
 
 public func logN(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
-    Logger.default.notice("[\(file)] \(function):\(line) \(message, privacy: .public)")
+    Log.shared.log(message, level: .notice, file: file, function: function, line: line)
 }
 
 public func logI(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
-    Logger.default.info("[\(file)] \(function):\(line) \(message, privacy: .public)")
+    Log.shared.log(message, level: .info, file: file, function: function, line: line)
 }
 
 public func logC(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
-    Logger.default.critical("[\(file)] \(function):\(line) \(message, privacy: .public)")
+    Log.shared.log(message, level: .critical, file: file, function: function, line: line)
 }
 
 public func logF(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
-    Logger.default.fault("[\(file)] \(function):\(line) \(message, privacy: .public)")
+    Log.shared.log(message, level: .fault, file: file, function: function, line: line)
 }
 
 public func logElapsedTime<T>(_ message: String, work: () throws -> T, file: String = #fileID, function: String = #function, line: Int = #line) rethrows -> T {
-    var result: T!
-    let elapsedTime = try ContinuousClock().measure {
-        result = try work()
-    }
-    logD("\(message) \(elapsedTime)", file: file, function: function, line: line)
-    return result
+    return try Log.shared.logElapsedTime(message, level: .debug, work: work, file: file, function: function, line: line)
 }

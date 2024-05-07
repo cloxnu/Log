@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "Log",
+    platforms: [.macOS(.v11), .iOS(.v16), .tvOS(.v14), .watchOS(.v7), .macCatalyst(.v14)],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
