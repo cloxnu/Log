@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  LogHandler.swift
+//
 //
 //  Created by Sidney Liu on 2024/5/7.
 //

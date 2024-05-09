@@ -30,6 +30,12 @@ public class Log: LogHandler {
         }
     }
     
+    public func export(from fromDate: Date = Date.now.addingTimeInterval(-24 * 3600)) -> [String] {
+        queue.sync {
+            LogStore.export(from: fromDate)
+        }
+    }
+    
     // MARK: - Handle
     
     public func log(

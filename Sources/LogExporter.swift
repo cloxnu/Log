@@ -15,7 +15,7 @@ public class LogExporter: Transferable {
     
     public static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(exportedContentType: .text) { logExporter in
-            let logString = LogStore.export().joined(separator: "\n")
+            let logString = Log.shared.export().joined(separator: "\n")
             return logString.data(using: .utf8) ?? Data()
         }
     }
